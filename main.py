@@ -13,12 +13,12 @@ api_face_similar = "https://eastus.api.cognitive.microsoft.com/face/v1.0/findsim
 
 headers = {'Ocp-Apim-Subscription-Key': subscription_key}
 
-faces_dict = {}
-
 
 @app.route("/")
 def home():
     invalid_urls = set()
+    invalid_urls_msg = "<br/>Handled only valid urls.<br/>Invalid URLs: "
+    faces_dict = {}
     params = {
         'returnFaceId': 'true',
         'returnFaceLandmarks': 'false'
@@ -35,25 +35,25 @@ def home():
                 print(f"Error with {image_url}: {res['error']['message']}")
                 invalid_urls.add(image_url)
                 continue
-            update_faces(res, image_url)
+            update_faces(res, faces_dict, image_url)
         except Exception as e:
             print(f"Error while calling the face api with: {image_url}.\nThe error: {e}")
-    return find_best_face() + (f"<br/>Handled only valid urls.Invalid URLs: {invalid_urls}" if invalid_urls else '')
+    return find_best_face(faces_dict) + (invalid_urls_msg + f"{','.join(invalid_urls)}" if invalid_urls else '')
 
 
-def find_best_face():
+def find_best_face(faces_dict):
     prefix_msg_response = "The best face is from: "
     backup_msg = "Please insert valid URLs"
     res = prefix_msg_response + f"{(max(faces_dict.values(), key=itemgetter(1)))[2]}" if faces_dict else backup_msg
     return res
 
 
-def update_faces(faces, image_url):
+def update_faces(faces, faces_dict, image_url):
     for face in faces:
         face_id = face['faceId']
         similar_face_id = face_id
         face_size = calculate_size_of_face(face)
-        similar_faces = find_similar_faces(face_id)
+        similar_faces = find_similar_faces(faces_dict, face_id)
         if similar_faces:
             for similar_face in similar_faces:
                 similar_face_id = similar_face['faceId']
@@ -67,7 +67,7 @@ def update_faces(faces, image_url):
             faces_dict[similar_face_id] = (1, face_size, image_url)
 
 
-def find_similar_faces(face_id):
+def find_similar_faces(faces_dict, face_id):
     res = []
     face_ids = [face for face in list(faces_dict.keys())]
     if face_ids:
