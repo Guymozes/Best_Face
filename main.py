@@ -17,7 +17,7 @@ headers = {'Ocp-Apim-Subscription-Key': subscription_key}
 @app.route("/")
 def home():
     invalid_urls = set()
-    invalid_urls_msg = "<br/>Handled only valid urls.<br/>Invalid URLs: "
+    invalid_urls_msg = "<br/>Invalid URLs: "
     faces_dict = {}
     params = {
         'returnFaceId': 'true',
@@ -38,7 +38,8 @@ def home():
             update_faces(res, faces_dict, image_url)
         except Exception as e:
             print(f"Error while calling the face api with: {image_url}.\nThe error: {e}")
-    return find_best_face(faces_dict) + (invalid_urls_msg + f"{','.join(invalid_urls)}" if invalid_urls else '')
+    invalid_urls_msg = f"{invalid_urls_msg} {','.join(invalid_urls)}" if invalid_urls else ''
+    return find_best_face(faces_dict) + invalid_urls_msg
 
 
 def find_best_face(faces_dict):
@@ -58,10 +59,11 @@ def update_faces(faces, faces_dict, image_url):
             for similar_face in similar_faces:
                 similar_face_id = similar_face['faceId']
                 bigger_face_size = face_size > faces_dict[similar_face_id][1]
-                faces_dict[similar_face_id] = (
-                    faces_dict[similar_face_id][0] + 1,
-                    face_size if bigger_face_size else faces_dict[similar_face_id][1],
-                    image_url if bigger_face_size else faces_dict[similar_face_id][2])
+                if bigger_face_size:
+                    faces_dict[face_id] = (faces_dict[similar_face_id][0] + 1, face_size, image_url)
+                    del faces_dict[similar_face_id]
+                else:
+                    faces_dict[similar_face_id][0] += 1
 
         else:
             faces_dict[similar_face_id] = (1, face_size, image_url)
