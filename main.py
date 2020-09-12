@@ -47,9 +47,10 @@ def find_best_face(faces_dict):
     res = "Please insert valid URLs"
     if faces_dict:
         max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]
-        res = requests.post(face_api_url, params=params,
+        response = requests.post(face_api_url, params=params,
                             headers=headers, json={"url": max_face_image}).json()
-        top, left = res[0]['faceRectangle']['top'], res[0]['faceRectangle']['left']
+
+        top, left = response[0]['faceRectangle']['top'], response[0]['faceRectangle']['left']
         res = f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
     return res
 
@@ -68,7 +69,8 @@ def update_faces(faces, faces_dict, image_url):
                     faces_dict[face_id] = (faces_dict[similar_face_id][0] + 1, face_size, image_url)
                     del faces_dict[similar_face_id]
                 else:
-                    faces_dict[similar_face_id][0] += 1
+                    current_values = faces_dict[similar_face_id]
+                    faces_dict[similar_face_id] = (current_values[0] + 1, current_values[1], current_values[2])
 
         else:
             faces_dict[similar_face_id] = (1, face_size, image_url)
