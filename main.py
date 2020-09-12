@@ -50,7 +50,7 @@ def find_best_face(faces_dict):
         res = requests.post(face_api_url, params=params,
                             headers=headers, json={"url": max_face_image}).json()
         top, left = res[0]['faceRectangle']['top'], res[0]['faceRectangle']['left']
-        res = f"{prefix_msg_response} {max_face_image}. The image top is: {top} and left: {left}"
+        res = f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
     return res
 
 
