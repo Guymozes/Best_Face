@@ -94,4 +94,4 @@ def calculate_size_of_face(face):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
