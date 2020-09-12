@@ -109,11 +109,13 @@ def find_best_face(faces_dict):
     prefix_msg_response = "The best face is from:"
     res = "Please insert valid URLs"
     if faces_dict:
-        max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]  # Finds the image of the largest face
+        max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]  # Finds the image that is the common one,
+        # that has the largest face.
+
         # Call the face detect API in order to get the top and left position of the wanted face
         response = requests.post(face_api_url, params=params,
                             headers=headers, json={"url": max_face_image}).json()
-        # TODO - first find common, and then size
+
         top, left = response[0]['faceRectangle']['top'], response[0]['faceRectangle']['left']
         res = f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
     return res
