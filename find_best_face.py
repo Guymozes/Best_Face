@@ -60,7 +60,7 @@ def update_faces(faces, faces_dict, image_url):
         face_id = face['faceId']
         similar_face_id = face_id
         face_size = calculate_size_of_face(face)
-        similar_faces = find_similar_faces(faces_dict, face_id)
+        similar_faces = find_similar_faces(list(faces_dict.keys()), face_id)
         if similar_faces:
             for similar_face in similar_faces:
                 similar_face_id = similar_face['faceId']
@@ -76,19 +76,18 @@ def update_faces(faces, faces_dict, image_url):
             faces_dict[similar_face_id] = (1, face_size, image_url)
 
 
-def find_similar_faces(faces_dict, face_id):
+def find_similar_faces(face_ids_list, face_id):
     """Search for a similar face from the face ids in faces_dicts, using the API.
      The face_id will be compared to each face_id from the faces_dict keys and in case the API returns a value,
       it found a match. Else - no similar face.
     Parameters:
            face_id (str): The face id to search for similar faces.
-           faces_dict (dict): The dictionary of all the faces"""
+           face_ids_list (list): A list of all the face ids"""
     res = []
-    face_ids = [face for face in list(faces_dict.keys())]
-    if face_ids:
+    if face_ids_list:
         body = {
             "faceId": face_id,
-            "faceIds": face_ids
+            "faceIds": face_ids_list
         }
         res = requests.post(api_face_similar, headers=headers, json=body).json()
     return res
@@ -107,18 +106,24 @@ def find_best_face(faces_dict):
      that has the most common face from all the images, that has the largest face size"""
 
     prefix_msg_response = "The best face is from:"
-    res = "Please insert valid URLs"
+    no_valid_urls_msg = "Please insert valid URLs"
     if faces_dict:
-        max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]  # Finds the image that is the common one,
-        # that has the largest face.
+        max_face_item = max(faces_dict.values(), key=itemgetter(1))  # Finds the image that is the common one,
+        # and that has the largest face.
+        max_face_image = max_face_item[2]
 
         # Call the face detect API in order to get the top and left position of the wanted face
         response = requests.post(face_api_url, params=params,
                             headers=headers, json={"url": max_face_image}).json()
 
-        top, left = response[0]['faceRectangle']['top'], response[0]['faceRectangle']['left']
-        res = f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
-    return res
+        # Find the same face in the image of the best face and return with top and left position
+        for face_id, face_values in faces_dict.items():
+            if face_values == max_face_item:
+                for face in response:
+                    if face['faceId'] == face_id:
+                        top, left = face['faceRectangle']['top'], face['faceRectangle']['left']
+                        return f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
+    return no_valid_urls_msg
 
 
 if __name__ == "__main__":
