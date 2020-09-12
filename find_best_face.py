@@ -26,8 +26,10 @@ params = {
 def home():
     invalid_urls = set()
     invalid_urls_msg = "<br/>Invalid URLs: "
-    faces_dict = {}  # Key: face ids, value: tuple: (number of same person in all images, maximum face size, url of image with maximum face size)
-    entry_msg = "Please add URLs of images(JPEG, PNG, and BMP format are supported) in the URL in the next format: /?list_of_images={url1},{url2} and so on"
+    faces_dict = {}  # Key: face ids, value: tuple: (number of same person in all images, maximum face size,
+    # url of image with maximum face size)
+    entry_msg = "Please add URLs of images(JPEG, PNG, and BMP format are supported) in the URL in the next format: " \
+                "/?list_of_images={url1},{url2} and so on "
     list_of_images = request.args.get('list_of_images').split(',') if request.args.get('list_of_images') else []
     if not list_of_images:
         return entry_msg
@@ -45,23 +47,6 @@ def home():
     # Return the invalid URL to the user (in case there are)
     invalid_urls_msg = f"{invalid_urls_msg} {','.join(invalid_urls)}" if invalid_urls else ''
     return find_best_face(faces_dict) + invalid_urls_msg
-
-
-def find_best_face(faces_dict):
-    """Return the best image with the best face - meaning the image,
-     that has the most common face from all the images, that has the largest face size"""
-
-    prefix_msg_response = "The best face is from:"
-    res = "Please insert valid URLs"
-    if faces_dict:
-        max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]  # Finds the image of the largest face
-        # Call the face detect API in order to get the top and left position of the wanted face
-        response = requests.post(face_api_url, params=params,
-                            headers=headers, json={"url": max_face_image}).json()
-        # TODO - first find common, and then size
-        top, left = response[0]['faceRectangle']['top'], response[0]['faceRectangle']['left']
-        res = f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
-    return res
 
 
 def update_faces(faces, faces_dict, image_url):
@@ -115,6 +100,23 @@ def calculate_size_of_face(face):
            face (dict): The current face to calculate the face size. """
     face_rectangle = face['faceRectangle']
     return face_rectangle['height'] * face_rectangle['width']
+
+
+def find_best_face(faces_dict):
+    """Return the best image with the best face - meaning the image,
+     that has the most common face from all the images, that has the largest face size"""
+
+    prefix_msg_response = "The best face is from:"
+    res = "Please insert valid URLs"
+    if faces_dict:
+        max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]  # Finds the image of the largest face
+        # Call the face detect API in order to get the top and left position of the wanted face
+        response = requests.post(face_api_url, params=params,
+                            headers=headers, json={"url": max_face_image}).json()
+        # TODO - first find common, and then size
+        top, left = response[0]['faceRectangle']['top'], response[0]['faceRectangle']['left']
+        res = f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
+    return res
 
 
 if __name__ == "__main__":
