@@ -12,6 +12,10 @@ face_api_url = 'https://bestfacedetection.cognitiveservices.azure.com/face/v1.0/
 api_face_similar = "https://eastus.api.cognitive.microsoft.com/face/v1.0/findsimilars"
 
 headers = {'Ocp-Apim-Subscription-Key': subscription_key}
+params = {
+    'returnFaceId': 'true',
+    'returnFaceLandmarks': 'false'
+}
 
 
 @app.route("/")
@@ -19,10 +23,6 @@ def home():
     invalid_urls = set()
     invalid_urls_msg = "<br/>Invalid URLs: "
     faces_dict = {}
-    params = {
-        'returnFaceId': 'true',
-        'returnFaceLandmarks': 'false'
-    }
     entry_msg = "Please add URLs of images in the URL in the next format: /?list_of_images={url1},{url2} and so on"
     list_of_images = request.args.get('list_of_images').split(',') if request.args.get('list_of_images') else []
     if not list_of_images:
@@ -43,9 +43,14 @@ def home():
 
 
 def find_best_face(faces_dict):
-    prefix_msg_response = "The best face is from: "
-    backup_msg = "Please insert valid URLs"
-    res = prefix_msg_response + f"{(max(faces_dict.values(), key=itemgetter(1)))[2]}" if faces_dict else backup_msg
+    prefix_msg_response = "The best face is from:"
+    res = "Please insert valid URLs"
+    if faces_dict:
+        max_face_image = max(faces_dict.values(), key=itemgetter(1))[2]
+        res = requests.post(face_api_url, params=params,
+                            headers=headers, json={"url": max_face_image}).json()
+        top, left = res[0]['faceRectangle']['top'], res[0]['faceRectangle']['left']
+        res = f"{prefix_msg_response} {max_face_image}. The image top is: {top} and left: {left}"
     return res
 
 
