@@ -29,7 +29,7 @@ def home():
     faces_dict = {}  # Key: face ids, value: tuple: (number of same person in all images, maximum face size,
     # url of image with maximum face size)
     entry_msg = "Please add URLs of images(JPEG, PNG, and BMP format are supported) in the URL in the next format: " \
-                "/?list_of_images={url1},{url2} and so on "
+                "/?list_of_images={url1},{url2} and so on"
     list_of_images = request.args.get('list_of_images').split(',') if request.args.get('list_of_images') else []
     if not list_of_images:
         return entry_msg
