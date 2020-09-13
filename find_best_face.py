@@ -27,7 +27,7 @@ def home():
     invalid_urls = set()
     invalid_urls_msg = "<br/>Invalid URLs: "
     faces_dict = {}  # Key: face ids, value: tuple: (number of same person in all images, maximum face size,
-    # url of image with maximum face size)
+    # url of image with maximum face size, top position of face, left position of face)
     entry_msg = "Please add URLs of images(JPEG, PNG, and BMP format are supported) in the URL in the next format: " \
                 "/?list_of_images={url1},{url2} and so on"
     list_of_images = request.args.get('list_of_images').split(',') if request.args.get('list_of_images') else []
@@ -66,14 +66,17 @@ def update_faces(faces, faces_dict, image_url):
                 similar_face_id = similar_face['faceId']
                 bigger_face_size = face_size > faces_dict[similar_face_id][1]
                 if bigger_face_size:
-                    faces_dict[face_id] = (faces_dict[similar_face_id][0] + 1, face_size, image_url)
-                    del faces_dict[similar_face_id]
+                    faces_dict[face_id] = (faces_dict[similar_face_id][0] + 1, face_size, image_url,
+                                           face['faceRectangle']['top'], face['faceRectangle']['left'])
+                    del faces_dict[similar_face_id]  # No need to save previous faces, the won't be the best face(image)
                 else:
                     current_values = faces_dict[similar_face_id]
-                    faces_dict[similar_face_id] = (current_values[0] + 1, current_values[1], current_values[2])
+                    faces_dict[similar_face_id] = (current_values[0] + 1, current_values[1], current_values[2],
+                                                   current_values[3], current_values[4])
 
         else:
-            faces_dict[similar_face_id] = (1, face_size, image_url)
+            faces_dict[similar_face_id] = (1, face_size, image_url,
+                                           face['faceRectangle']['top'], face['faceRectangle']['left'])
 
 
 def find_similar_faces(face_ids_list, face_id):
@@ -111,18 +114,9 @@ def find_best_face(faces_dict):
         max_face_item = max(faces_dict.values(), key=itemgetter(1))  # Finds the image that is the common one,
         # and that has the largest face.
         max_face_image = max_face_item[2]
-
-        # Call the face detect API in order to get the top and left position of the wanted face
-        response = requests.post(face_api_url, params=params,
-                            headers=headers, json={"url": max_face_image}).json()
-
-        # Find the same face in the image of the best face and return with top and left position
-        for face_id, face_values in faces_dict.items():
-            if face_values == max_face_item:
-                for face in response:
-                    if face['faceId'] == face_id:
-                        top, left = face['faceRectangle']['top'], face['faceRectangle']['left']
-                        return f"{prefix_msg_response} {max_face_image}. The face top is: {top} and left: {left}"
+        max_face_top = max_face_item[3]
+        max_face_left = max_face_item[4]
+        return f"{prefix_msg_response} {max_face_image}. The face top is: {max_face_top} and left: {max_face_left}"
     return no_valid_urls_msg
 
 
